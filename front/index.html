@@ -63,6 +63,7 @@
 						"&redirect_uri=" + redirectUrl;
 
 					window.location = authorizeUrl;
+          $('#formAuthorise').hide();
 				},
 				error: function (result) {
 					alert("ERROR:" + JSON.stringify(result.responseJSON.error));
@@ -82,24 +83,29 @@
 			var authCode = $.url(this.location.href).param('code');
 			// console.log("Auth Code:",authCode);
 			// console.log("State:",state);
-      alert("Code:"+authCode);
 
-			// invoke AJAX call from frontend client side to your backend server side
-			// $.ajax({
-			// 	url: "/getPersonData",
-			// 	data: {
-			// 		authCode: authCode,
-			// 		codeVerifier: window.sessionStorage.getItem("codeVerifier")
-			// 	},
-			// 	type: "POST", // post to server side
-			// 	success: function (result) {
-			// 		// console.log("result",result);
-			// 		prefillForm(result);
-			// 	},
-			// 	error: function (result) {
-			// 		alert("ERROR:" + JSON.stringify(result.responseJSON.error));
-			// 	}
-			// });
+			//invoke AJAX call from frontend client side to your backend server side
+			$.ajax({
+				url: "/getPersonData",
+				data: {
+					authCode: authCode,
+					codeVerifier: window.sessionStorage.getItem("codeVerifier")
+				},
+				type: "POST", // post to server side
+				success: function (result) {
+					// console.log("result",result);
+					prefillForm(result);
+				},
+				error: function (result) {
+					alert("ERROR:" + JSON.stringify(result.responseJSON.error));
+				}
+			});
+		}
+
+    function prefillForm(data) {
+			$('#formAuthorise').show();
+      let result = JSON.stringify(data);
+      alert(result);
 		}
   </script>
 </head>

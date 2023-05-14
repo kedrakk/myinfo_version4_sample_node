@@ -8,6 +8,7 @@ const config = require('./config/config.js');
 const connector = new MyInfoConnector(config.MYINFO_CONNECTOR_CONFIG);
 const crypto = require("crypto");
 var sessionIdCache = {};
+const fs = require("fs");
 
 const PORT = 3001;
 
@@ -84,6 +85,76 @@ app.get("/getEnv", function (req, res) {
 
   app.get("/callback", function (req, res) {
     res.sendFile(__dirname + `/public/index.html`);
+  });
+
+  function readFiles(dirname, onFileContent, onError) {
+    fs.readdir(dirname, function (err, filenames) {
+      if (err) {
+        onError(err);
+        return;
+      }
+      filenames.forEach(function (filename) {
+        fs.readFile(dirname + filename, "utf8", function (err, content) {
+          if (err) {
+            onError(err);
+            return;
+          }
+          onFileContent(filename, content);
+        });
+      });
+    });
+  }
+
+  app.post("/getPersonData", async function (req, res, next) {
+    try {
+      // get variables from frontend
+      var authCode = req.body.authCode;
+      //retrieve code verifier from session cache
+      var codeVerifier = sessionIdCache[req.cookies.sid];
+      console.log("Calling MyInfo NodeJs Library...".green);
+  
+      // retrieve private siging key and decode to utf8 from FS
+      let privateSigningKey = fs.readFileSync(
+        config.APP_CONFIG.DEMO_APP_CLIENT_PRIVATE_SIGNING_KEY,
+        "utf8"
+      );
+  
+      let privateEncryptionKeys = [];
+      // retrieve private encryption keys and decode to utf8 from FS, insert all keys to array
+      readFiles(
+        config.APP_CONFIG.DEMO_APP_CLIENT_PRIVATE_ENCRYPTION_KEYS,
+        (filename, content) => {
+          privateEncryptionKeys.push(content);
+        },
+        (err) => {
+          throw err;
+        }
+      );
+  
+      //call myinfo connector to retrieve data
+      let personData = await connector.getMyInfoPersonData(
+        authCode,
+        codeVerifier,
+        privateSigningKey,
+        privateEncryptionKeys
+      );
+  
+      /* 
+        P/s: Your logic to handle the person data ...
+      */
+      console.log(
+        "--- Sending Person Data From Your-Server (Backend) to Your-Client (Frontend)---:"
+          .green
+      );
+      console.log(JSON.stringify(personData)); // log the data for demonstration purpose only
+      res.status(200).send(personData); //return personData
+    } catch (error) {
+      console.log("---MyInfo NodeJs Library Error---".red);
+      console.log(error);
+      res.status(500).send({
+        error: error,
+      });
+    }
   });
 
 app.listen(PORT, () => {
