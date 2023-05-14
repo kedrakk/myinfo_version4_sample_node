@@ -1,0 +1,123 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyInfo Version 4 Implementation</title>
+  <link rel="stylesheet" href="app.css">
+  <script src="assets/component/jquery/jquery.min.js"></script>
+  <script src="assets/component/jquery/purl.js"></script>
+  <script>
+    var scrollToAppForm = false;
+		var authApiUrl; // URL for authorize API
+		var clientId; // your app_id/client_id provided to you during onboarding
+		var redirectUrl; // callback url for your application
+		var purpose_id; // The purpose of your data retrieval
+		var scope; // the attributes you are retrieving for your application to fill the form
+		var method = "S256"
+		var securityEnable; // the auth level, determines the flow
+		var clientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+
+    window.onload = function (e) {
+			// invoke AJAX call to get the demo app info from config
+			$.ajax({
+				url: "/getEnv",
+				data: {},
+				type: "GET",
+				success: function (result) {
+					 console.log("result:", result);
+					clientId = result.clientId;
+					redirectUrl = result.redirectUrl;
+					scope = result.scope;
+					purpose_id = result.purpose_id;
+					environment = result.environment;
+					authApiUrl = result.authApiUrl;
+				},
+				error: function (result) {
+					alert("ERROR:" + JSON.stringify(result.responseJSON.error));
+				}
+			});
+		}
+
+    $(function () {
+      $("#formAuthorise").submit(function (event) {
+        event.preventDefault();
+        callAuthorizeApi();
+      });
+    });
+
+    function callAuthorizeApi() {
+			//Call backend server to generate code challenge 
+			$.ajax({
+				url: "/generateCodeChallenge",
+				data: {},
+				type: "POST",
+				success: function (result) {
+					//Redirect to authorize url after generating code challenge
+					var authorizeUrl = authApiUrl + "?client_id=" + clientId +
+						"&scope=" + scope +
+						"&purpose_id=" + purpose_id +
+						"&code_challenge=" + result +
+						"&code_challenge_method=" + method +
+						"&redirect_uri=" + redirectUrl;
+
+					window.location = authorizeUrl;
+				},
+				error: function (result) {
+					alert("ERROR:" + JSON.stringify(result.responseJSON.error));
+				}
+			});
+		}
+
+    if (this.location.href.indexOf("callback?code") > -1) {
+			scrollToAppForm = true;
+			callServerAPIs(); // call the backend server APIs
+		} else if (this.location.href.indexOf("callback") > -1) {
+			scrollToAppForm = true;
+			alert("ERROR:" + JSON.stringify("Missing Auth Code"));
+		}
+
+    function callServerAPIs() {
+			var authCode = $.url(this.location.href).param('code');
+			// console.log("Auth Code:",authCode);
+			// console.log("State:",state);
+      alert("Code:"+authCode);
+
+			// invoke AJAX call from frontend client side to your backend server side
+			// $.ajax({
+			// 	url: "/getPersonData",
+			// 	data: {
+			// 		authCode: authCode,
+			// 		codeVerifier: window.sessionStorage.getItem("codeVerifier")
+			// 	},
+			// 	type: "POST", // post to server side
+			// 	success: function (result) {
+			// 		// console.log("result",result);
+			// 		prefillForm(result);
+			// 	},
+			// 	error: function (result) {
+			// 		alert("ERROR:" + JSON.stringify(result.responseJSON.error));
+			// 	}
+			// });
+		}
+  </script>
+</head>
+
+<body>
+  <div class="parent">
+    <div class="child">
+      <img src="fundex_logo.png" alt="fe logo" id="logo-img">
+      <div class="spinner-square" id="my-spinner">
+        <div class="square-1 square"></div>
+        <div class="square-2 square"></div>
+        <div class="square-3 square"></div>
+      </div>
+      <form id="formAuthorise">
+        <a href="#" onclick="$(this).closest('form').submit()" class="btn2">Retrieve MyInfo</a>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>
