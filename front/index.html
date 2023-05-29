@@ -81,19 +81,13 @@
 
     function callServerAPIs() {
 			var authCode = $.url(this.location.href).param('code');
-			// console.log("Auth Code:",authCode);
-			// console.log("State:",state);
-
-			//invoke AJAX call from frontend client side to your backend server side
 			$.ajax({
 				url: "/getPersonData",
 				data: {
-					authCode: authCode,
-					codeVerifier: window.sessionStorage.getItem("codeVerifier")
+					authCode: authCode
 				},
 				type: "POST", // post to server side
 				success: function (result) {
-					// console.log("result",result);
 					prefillForm(result);
 				},
 				error: function (result) {
